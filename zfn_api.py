@@ -247,9 +247,7 @@ class Client:
         """获取个人信息"""
         url = urljoin(self.base_url, "xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801")
         try:
-            req_info = self.sess.get(
-                url, headers=self.headers, cookies=self.cookies, timeout=self.timeout
-            )
+            req_info = self.sess.get(url, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
             if req_info.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
             doc = pq(req_info.text)
@@ -263,61 +261,54 @@ class Client:
                 key = pq(content).find("label.col-sm-4.control-label").text()
                 value = pq(content).find("div.col-sm-8 p.form-control-static").text()
                 # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
-                pending_result[key] = value
+                if key:  # 确保key不是空的，避免无效数据
+                    pending_result[key] = value
             # 学生学籍信息，其他信息，联系方式
             for ul_item in doc.find("div.col-sm-4").items():
                 content = pq(ul_item).find("div.form-group")
                 key = pq(content).find("label.col-sm-4.control-label").text()
                 value = pq(content).find("div.col-sm-8 p.form-control-static").text()
                 # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
-                pending_result[key] = value
+                if key:  # 确保key不是空的，避免无效数据
+                    pending_result[key] = value
             if pending_result.get("学号：") == "":
                 return {
                     "code": 1014,
                     "msg": "当前学年学期无学生时盒数据，您可能已经毕业了。\n\n如果是专升本同学，请使用专升本后的新学号登录～",
                 }
+
+            # 使用 pending_result.get(key) or "无" 的模式。
+            # .get(key) 在键不存在时返回 None。
+            # 在Python中，None 和空字符串 "" 都被视为 "falsy"（布尔值为False）。
+            # 所以 `falsy_value or "无"` 会返回 "无"。
+            # 如果 .get(key) 返回一个非空字符串（"truthy"），则表达式返回该字符串。
+            # 这种方式简洁且能同时处理键不存在和键值为空字符串两种情况。
             result = {
-                "sid": pending_result["学号："],
-                "name": pending_result["姓名："],
-                # "birthday": "无" if pending_result.get("出生日期：") == '' else pending_result["出生日期："],
-                # "id_number": "无" if pending_result.get("证件号码：") == '' else pending_result["证件号码："],
-                # "candidate_number": "无" if pending_result.get("考生号：") == '' else pending_result["考生号："],
-                # "status": "无" if pending_result.get("学籍状态：") == '' else pending_result["学籍状态："],
-                # "entry_date": "无" if pending_result.get("入学日期：") == '' else pending_result["入学日期："],
-                # "graduation_school": "无" if pending_result.get("毕业中学：") == '' else pending_result["毕业中学："],
-                "domicile": "无"
-                if pending_result.get("籍贯：") == ""
-                else pending_result["籍贯："],
-                "phone_number": "无"
-                if pending_result.get("手机号码：") == ""
-                else pending_result["手机号码："],
-                "parents_number": "无",
-                "email": "无"
-                if pending_result.get("电子邮箱：") == ""
-                else pending_result["电子邮箱："],
-                "political_status": "无"
-                if pending_result.get("政治面貌：") == ""
-                else pending_result["政治面貌："],
-                "national": "无"
-                if pending_result.get("民族：") == ""
-                else pending_result["民族："],
-                # "education": "无" if pending_result.get("培养层次：") == '' else pending_result["培养层次："],
-                # "postal_code": "无" if pending_result.get("邮政编码：") == '' else pending_result["邮政编码："],
-                # "grade": int(pending_result["学号："][0:4]),
+                "sid": pending_result.get("学号：") or "无",
+                "name": pending_result.get("姓名：") or "无",
+                # "birthday": pending_result.get("出生日期：") or "无",
+                # "id_number": pending_result.get("证件号码：") or "无",
+                # "candidate_number": pending_result.get("考生号：") or "无",
+                # "status": pending_result.get("学籍状态：") or "无",
+                # "entry_date": pending_result.get("入学日期：") or "无",
+                # "graduation_school": pending_result.get("毕业中学：") or "无",
+                "domicile": pending_result.get("籍贯：") or "无",
+                "phone_number": pending_result.get("手机号码：") or "无",
+                "parents_number": "无",  # 此字段似乎未解析，保持原样
+                "email": pending_result.get("电子邮箱：") or "无",
+                "political_status": pending_result.get("政治面貌：") or "无",
+                "national": pending_result.get("民族：") or "无",
+                # "education": pending_result.get("培养层次：") or "无",
+                # "postal_code": pending_result.get("邮政编码：") or "无",
+                # "grade": int(pending_result["学号："][0:4]), # 注意：如果学号可能为空
             }
             if pending_result.get("学院名称：") is not None:
                 # 如果在个人信息页面获取到了学院班级
                 result.update(
                     {
-                        "college_name": "无"
-                        if pending_result.get("学院名称：") == ""
-                        else pending_result["学院名称："],
-                        "major_name": "无"
-                        if pending_result.get("专业名称：") == ""
-                        else pending_result["专业名称："],
-                        "class_name": "无"
-                        if pending_result.get("班级名称：") == ""
-                        else pending_result["班级名称："],
+                        "college_name": pending_result.get("学院名称：") or "无",
+                        "major_name": pending_result.get("专业名称：") or "无",
+                        "class_name": pending_result.get("班级名称：") or "无",
                     }
                 )
             else:
@@ -338,26 +329,16 @@ class Client:
                     # 通过学生证补办申请入口，来补全部分信息
                     for ul_item in _doc.find("div.col-sm-6").items():
                         content = pq(ul_item).find("div.form-group")
-                        key = (
-                            pq(content).find("label.col-sm-4.control-label").text()
-                            + "："
-                        )  # 为了保持格式一致，这里加个冒号
-                        value = (
-                            pq(content).find("div.col-sm-8 label.control-label").text()
-                        )
+                        key = pq(content).find("label.col-sm-4.control-label").text() + "："  # 为了保持格式一致，这里加个冒号
+                        value = pq(content).find("div.col-sm-8 label.control-label").text()
                         # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
-                        pending_result[key] = value
+                        if key:  # 确保key不是空的
+                            pending_result[key] = value
                     result.update(
                         {
-                            "college_name": "无"
-                            if pending_result.get("学院：") is None
-                            else pending_result["学院："],
-                            "major_name": "无"
-                            if pending_result.get("专业：") is None
-                            else pending_result["专业："],
-                            "class_name": "无"
-                            if pending_result.get("班级：") is None
-                            else pending_result["班级："],
+                            "college_name": pending_result.get("学院：") or "无",
+                            "major_name": pending_result.get("专业：") or "无",
+                            "class_name": pending_result.get("班级：") or "无",
                         }
                     )
             return {"code": 1000, "msg": "获取个人信息成功", "data": result}
@@ -369,7 +350,10 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
+            return {
+                "code": 2333,
+                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
+            }
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
@@ -998,7 +982,7 @@ class Client:
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
-            return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}    
+            return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}
 
     def get_selected_courses2(self, year: int = 0, term: int = 0):
         """获取已选课程信息2"""
