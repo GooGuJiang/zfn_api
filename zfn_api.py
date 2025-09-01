@@ -35,7 +35,7 @@ class Client:
 
     def __init__(self, cookies={}, **kwargs):
         # 基础配置
-        self.base_url = kwargs.get("base_url")
+        self.base_url = kwargs.get("base_url", "")
         self.raspisanie = kwargs.get("raspisanie", RASPIANIE)
         self.ignore_type = kwargs.get("ignore_type", [])
         self.detail_category_type = kwargs.get("detail_category_type", [])
@@ -55,7 +55,6 @@ class Client:
             "Accept"
         ] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
         self.sess = requests.Session()
-        self.sess.keep_alive = False
         self.cookies = cookies
 
     def login(self, sid, password):
@@ -370,11 +369,11 @@ class Client:
             else "cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005",
         )
         temp_term = term
-        term = term**2 * 3
-        term = "" if term == 0 else term
+        term_param = term**2 * 3
+        term_str = "" if term_param == 0 else str(term_param)
         data = {
             "xnm": str(year),  # 学年数
-            "xqm": str(term),  # 学期数，第一学期为3，第二学期为12, 整个学年为空''
+            "xqm": term_str,  # 学期数，第一学期为3，第二学期为12, 整个学年为空''
             "_search": "false",
             "nd": int(time.time() * 1000),
             "queryModel.showCount": "100",  # 每页最多条数
@@ -445,11 +444,11 @@ class Client:
             "kwgl/kscx_cxXsksxxIndex.html?doType=query&gnmkdm=N358105",
         )
         temp_term = term
-        term = term**2 * 3
-        term = "" if term == 0 else term
+        term_param = term**2 * 3
+        term_str = "" if term_param == 0 else str(term_param)
         data = {
             "xnm": str(year),  # 学年数
-            "xqm": str(term),  # 学期数，第一学期为3，第二学期为12, 整个学年为空''
+            "xqm": term_str,  # 学期数，第一学期为3，第二学期为12, 整个学年为空''
             "_search": "false",
             "nd": int(time.time() * 1000),
             "queryModel.showCount": "100",  # 每页最多条数
@@ -609,7 +608,7 @@ class Client:
                 return {"code": 998, "msg": doc_main("div.alert-danger").text()}
             sid = doc_main("form#form input#xh_id").attr("value")
             display_statistics = (
-                doc_main("div#alertBox").text().replace(" ", "").replace("\n", "")
+                str(doc_main("div#alertBox").text()).replace(" ", "").replace("\n", "")
             )
             sid = doc_main("input#xh_id").attr("value")
             statistics = self.get_academia_statistics(display_statistics)
@@ -992,14 +991,17 @@ class Client:
                 "/xsxxxggl/xsxxwh_cxXsxkxx.html?gnmkdm=N100801",
             )
             if (year == 0 or term == 0):
-                year = ""
-                term = ""
+                year_str = ""
+                term_str = ""
+                temp_term = 0  # 设置默认值
             else:
                 temp_term = term
-                term = term**2 * 3
+                term_param = term**2 * 3
+                year_str = str(year)
+                term_str = str(term_param)
             data = {
-                "xnm": str(year),
-                "xqm": str(term),
+                "xnm": year_str,
+                "xqm": term_str,
                 "_search": "false",
                 "queryModel.showCount": 5000,
                 "queryModel.currentPage": 1,
@@ -1079,7 +1081,7 @@ class Client:
             got_credit_list = [i for i in doc("font[color='red']").items()]
             if len(got_credit_list) == 0:
                 return {"code": 1005, "msg": "板块课内容为空"}
-            head_data = {"got_credit": got_credit_list[2].string}
+            head_data = {"got_credit": got_credit_list[2].text()}
 
             kklxdm_list = []
             xkkz_id_list = []
@@ -1118,8 +1120,8 @@ class Client:
             doc_display = pq(req_display_data.text)
             display_data = {}
             for display_data_content in doc_display("input[type='hidden']").items():
-                name = display_data_content.get("name")
-                value = display_data_content.get("value")
+                name = display_data_content.attr("name")
+                value = display_data_content.attr("value")
                 display_data[str(name)] = str(value)
             head_data.update(display_data)
 
@@ -1201,12 +1203,12 @@ class Client:
                         "title": j.get("kcmc"),
                         "teacher_id": (re.findall(r"(.*?\d+)/", j.get("jsxx")))[0],
                         "teacher": (re.findall(r"/(.*?)/", j.get("jsxx")))[0],
-                        "credit": float(j.get("xf"), 0),
+                        "credit": float(j.get("xf") or 0),
                         "kklxdm": head_data[f"bkk{block}_kklxdm"],
-                        "capacity": int(i.get("jxbrl", 0)),
-                        "selected_number": int(i.get("yxzrs", 0)),
-                        "place": self.get_place(i.get("jxdd")),
-                        "time": self.get_course_time(i.get("sksj")),
+                        "capacity": int(j.get("jxbrl", 0)),
+                        "selected_number": int(j.get("yxzrs", 0)),
+                        "place": self.get_place(j.get("jxdd")),
+                        "time": self.get_course_time(j.get("sksj")),
                     }
                     for j in temp_list
                 ],
@@ -1344,7 +1346,8 @@ class Client:
             return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
         allc_str = [allc.text() for allc in doc("font[size='2px']").items()]
         try:
-            gpa = float(allc_str[2])
+            gpa_text = str(allc_str[2]) if len(allc_str) > 2 else ""
+            gpa = float(gpa_text)
             return gpa
         except Exception:
             return "init"
@@ -1367,7 +1370,7 @@ class Client:
         try:
             data_list = [(th.text).strip() for th in ths]
             return data_list[6]
-        except:
+        except Exception:
             return None
 
     @classmethod
@@ -1613,9 +1616,9 @@ if __name__ == "__main__":
     import sys
     import os
 
-    base_url = "https://xxxx.xxx.edu.cn"  # 教务系统URL
-    sid = "123456"  # 学号
-    password = "abc654321"  # 密码
+    base_url = "https:///"  # 教务系统URL
+    sid = "1"  # 学号
+    password = ""  # 密码
     lgn_cookies = (
         {
             # "insert_cookie": "",
