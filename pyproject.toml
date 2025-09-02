@@ -1,0 +1,15 @@
+[project]
+name = "zfn-api"
+version = "0.1.0"
+description = "Zhengfang new education system API client"
+authors = [{name = "Unknown", email = "unknown@example.com"}]
+requires-python = ">=3.8,<4.0"
+dependencies = [
+    "requests==2.27.1",
+    "pyquery==1.4.3",
+    "rsa==4.8",
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
