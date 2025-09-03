@@ -1,16 +1,22 @@
+from __future__ import annotations
+
 import json
 import re
 import time
 import traceback
+from typing import Any
 from urllib.parse import urljoin
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class CourseMixin:
+
+class CourseMixin(ClientProtocol):
     """Course selection related APIs."""
 
-    def get_selected_courses(self, year: int, term: int):
+    def get_selected_courses(self, year: int, term: int) -> dict[str, Any]:
         """获取已选课程信息"""
         try:
             url = urljoin(
@@ -71,7 +77,7 @@ class CourseMixin:
             traceback.print_exc()
             return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}
 
-    def get_selected_courses2(self, year: int = 0, term: int = 0):
+    def get_selected_courses2(self, year: int = 0, term: int = 0) -> dict[str, Any]:
         """获取已选课程信息2"""
         try:
             url = urljoin(
@@ -144,7 +150,7 @@ class CourseMixin:
             traceback.print_exc()
             return {"code": 999, "msg": f"获取已选课程2时未记录的错误：{str(e)}"}
 
-    def get_block_courses(self, year: int, term: int, block: int):
+    def get_block_courses(self, year: int, term: int, block: int) -> dict[str, Any]:
         """获取板块课选课列表"""
         try:
             url_head = urljoin(
@@ -315,7 +321,7 @@ class CourseMixin:
         kklxdm: str,
         year: int,
         term: int,
-    ):
+    ) -> dict[str, Any]:
         """选课"""
         try:
             url_select = urljoin(
@@ -359,7 +365,7 @@ class CourseMixin:
             traceback.print_exc()
             return {"code": 999, "msg": f"选课时未记录的错误：{str(e)}"}
 
-    def cancel_course(self, do_id: str, course_id: str, year: int, term: int):
+    def cancel_course(self, do_id: str, course_id: str, year: int, term: int) -> dict[str, Any]:
         """取消选课"""
         try:
             url_cancel = urljoin(
@@ -399,7 +405,7 @@ class CourseMixin:
             traceback.print_exc()
             return {"code": 999, "msg": f"选课时未记录的错误：{str(e)}"}
 
-    def get_course_category(self, type, item):
+    def get_course_category(self, type: str, item: dict[str, Any]) -> str | None:
         """根据课程号获取类别"""
         if type not in self.detail_category_type:
             return item.get("KCLBMC")

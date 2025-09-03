@@ -1,16 +1,22 @@
+from __future__ import annotations
+
 import json
 import re
 import time
 import traceback
+from typing import Any
 from urllib.parse import urljoin
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class NotificationMixin:
+
+class NotificationMixin(ClientProtocol):
     """Notification related APIs."""
 
-    def get_notifications(self):
+    def get_notifications(self) -> dict[str, Any]:
         """获取通知消息"""
         url = urljoin(self.base_url, "xtgl/index_cxDbsy.html?doType=query")
         data = {
@@ -57,7 +63,7 @@ class NotificationMixin:
             return {"code": 999, "msg": "获取消息时未记录的错误：" + str(e)}
 
     @classmethod
-    def split_notifications(cls, item):
+    def split_notifications(cls, item: dict[str, Any]) -> dict[str, Any]:
         if not item.get("xxnr"):
             return {"type": None, "content": None}
         content_list = re.findall(r"(.*):(.*)", item["xxnr"])

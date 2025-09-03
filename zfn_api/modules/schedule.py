@@ -1,16 +1,22 @@
+from __future__ import annotations
+
 import json
 import re
 import time
 import traceback
+from typing import Any
 from urllib.parse import urljoin
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class ScheduleMixin:
+
+class ScheduleMixin(ClientProtocol):
     """Schedule related APIs."""
 
-    def get_exam_schedule(self, year: int, term: int = 0):
+    def get_exam_schedule(self, year: int, term: int = 0) -> dict[str, Any]:
         """获取考试信息"""
         url = urljoin(
             self.base_url,
@@ -88,7 +94,7 @@ class ScheduleMixin:
             traceback.print_exc()
             return {"code": 999, "msg": "获取考试信息时未记录的错误：" + str(e)}
 
-    def get_schedule(self, year: int, term: int):
+    def get_schedule(self, year: int, term: int) -> dict[str, Any]:
         """获取课程表信息"""
         url = urljoin(self.base_url, "kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151")
         temp_term = term
@@ -155,7 +161,7 @@ class ScheduleMixin:
             traceback.print_exc()
             return {"code": 999, "msg": "获取课表时未记录的错误：" + str(e)}
 
-    def get_schedule_pdf(self, year: int, term: int, name: str = "导出"):
+    def get_schedule_pdf(self, year: int, term: int, name: str = "导出") -> dict[str, Any]:
         """获取课表pdf"""
         url_policy = urljoin(self.base_url, "kbdy/bjkbdy_cxXnxqsfkz.html")
         url_file = urljoin(self.base_url, "kbcx/xskbcx_cxXsShcPdf.html")
@@ -227,7 +233,7 @@ class ScheduleMixin:
             return {"code": 999, "msg": "获取课程表pdf时未记录的错误：" + str(e)}
 
     @classmethod
-    def display_course_time(cls, sessions):
+    def display_course_time(cls, sessions: str) -> str | None:
         if not sessions:
             return None
         args = re.findall(r"(\d+)", sessions)
@@ -236,14 +242,14 @@ class ScheduleMixin:
         return f"{start_time}~{end_time}"
 
     @classmethod
-    def list_sessions(cls, sessions):
+    def list_sessions(cls, sessions: str) -> list[int] | None:
         if not sessions:
             return None
         args = re.findall(r"(\d+)", sessions)
         return [n for n in range(int(args[0]), int(args[1]) + 1)]
 
     @classmethod
-    def list_weeks(cls, weeks):
+    def list_weeks(cls, weeks: str) -> list[int] | None:
         """返回课程所含周列表"""
         if not weeks:
             return None
@@ -272,22 +278,22 @@ class ScheduleMixin:
         return week_list
 
     @classmethod
-    def get_display_term(cls, sid, year, term):
-        if (sid and year and term) is None:
+    def get_display_term(cls, sid: str, year: str, term: str) -> str | None:
+        if not (sid and year and term):
             return None
         grade = int(sid[0:2])
-        year = int(year[2:4])
-        term = int(term)
+        year_int = int(year[2:4])
+        term_int = int(term)
         mapping = {
-            grade: "大一上" if term == 1 else "大一下",
-            grade + 1: "大二上" if term == 1 else "大二下",
-            grade + 2: "大三上" if term == 1 else "大三下",
-            grade + 3: "大四上" if term == 1 else "大四下",
+            grade: "大一上" if term_int == 1 else "大一下",
+            grade + 1: "大二上" if term_int == 1 else "大二下",
+            grade + 2: "大三上" if term_int == 1 else "大三下",
+            grade + 3: "大四上" if term_int == 1 else "大四下",
         }
-        return mapping.get(year)
+        return mapping.get(year_int)
 
     @classmethod
-    def split_merge_display(cls, schedule):
+    def split_merge_display(cls, schedule: dict[str, Any]) -> dict[str, Any]:
         repetIndex = []
         count = 0
         for items in schedule["courses"]:

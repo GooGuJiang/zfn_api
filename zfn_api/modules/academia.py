@@ -1,16 +1,22 @@
+from __future__ import annotations
+
 import json
 import re
 import time
 import traceback
+from typing import Any
 from urllib.parse import urljoin
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class AcademiaMixin:
+
+class AcademiaMixin(ClientProtocol):
     """Academia related APIs."""
 
-    def get_academia(self):
+    def get_academia(self) -> dict[str, Any]:
         """获取学业生涯情况"""
         url_main = urljoin(
             self.base_url,
@@ -34,11 +40,11 @@ class AcademiaMixin:
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             if str(doc_main("div.alert-danger")) != "":
                 return {"code": 998, "msg": doc_main("div.alert-danger").text()}
-            sid = doc_main("form#form input#xh_id").attr("value")
+            sid_attr = doc_main("input#xh_id").attr("value")
+            sid = str(sid_attr or "")
             display_statistics = (
                 str(doc_main("div#alertBox").text()).replace(" ", "").replace("\n", "")
             )
-            sid = doc_main("input#xh_id").attr("value")
             statistics = self.get_academia_statistics(display_statistics)
             type_statistics = self.get_academia_type_statistics(req_main.text)
             details = {}
@@ -93,7 +99,7 @@ class AcademiaMixin:
             traceback.print_exc()
             return {"code": 999, "msg": "获取学业情况时未记录的错误：" + str(e)}
 
-    def get_academia_pdf(self):
+    def get_academia_pdf(self) -> dict[str, Any]:
         """获取学业生涯（学生成绩总表）pdf"""
         url_view = urljoin(self.base_url, "bysxxcx/xscjzbdy_dyXscjzbView.html")
         url_window = urljoin(self.base_url, "bysxxcx/xscjzbdy_dyCjdyszxView.html")
@@ -218,7 +224,7 @@ class AcademiaMixin:
             return {"code": 999, "msg": "获取成绩总表pdf时未记录的错误：" + str(e)}
 
     @classmethod
-    def get_academia_statistics(cls, display_statistics):
+    def get_academia_statistics(cls, display_statistics: str) -> dict:
         display_statistics = "".join(display_statistics.split())
         gpa_list = re.findall(r"([0-9]{1,}[.][0-9]*)", display_statistics)
         if len(gpa_list) == 0 or not cls.is_number(gpa_list[0]):
@@ -248,7 +254,7 @@ class AcademiaMixin:
         }
 
     @classmethod
-    def get_academia_type_statistics(cls, content: str):
+    def get_academia_type_statistics(cls, content: str) -> dict[str, dict[str, Any]]:
         finder = re.findall(
             r"\"(.*)&nbsp.*要求学分.*:([0-9]{1,}[.][0-9]*|0|&nbsp;).*获得学分.*:([0-9]{1,}[.][0-9]*|0|&nbsp;).*未获得学分.*:([0-9]{1,}[.][0-9]*|0|&nbsp;)[\s\S]*?<span id='showKc(.*)'></span>",
             content,

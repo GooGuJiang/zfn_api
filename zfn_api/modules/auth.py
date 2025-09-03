@@ -1,15 +1,21 @@
+from __future__ import annotations
+
 import base64
 import json
 import time
 import traceback
+from typing import Any
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class AuthMixin:
+
+class AuthMixin(ClientProtocol):
     """Authentication related APIs."""
 
-    def login(self, sid, password):
+    def login(self, sid: str, password: str) -> dict[str, Any]:
         """登录教务系统"""
         need_verify = False
         try:
@@ -69,8 +75,16 @@ class AuthMixin:
             return {"code": 999, "msg": f"{msg}：{str(e)}"}
 
     def login_with_kaptcha(
-        self, sid, csrf_token, cookies, password, modulus, exponent, kaptcha, **kwargs
-    ):
+        self,
+        sid: str,
+        csrf_token: str,
+        cookies: dict[str, str],
+        password: str,
+        modulus: str,
+        exponent: str,
+        kaptcha: str,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         """需要验证码的登陆"""
         try:
             encrypt_password = self.encrypt_password(password, modulus, exponent)
@@ -96,8 +110,7 @@ class AuthMixin:
             if not self.cookies.get("route") and cookies.get("route"):
                 route_cookies = {"JSESSIONID": self.cookies["JSESSIONID"], "route": cookies["route"]}
                 self.cookies = route_cookies
-            else:
-                return {"code": 1000, "msg": "登录成功", "data": {"cookies": self.cookies}}
+            return {"code": 1000, "msg": "登录成功", "data": {"cookies": self.cookies}}
         except exceptions.Timeout:
             return {"code": 1003, "msg": "登录超时"}
         except (

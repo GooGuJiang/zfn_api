@@ -1,14 +1,20 @@
+from __future__ import annotations
+
 import json
 import traceback
+from typing import Any
 from urllib.parse import urljoin
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class InfoMixin:
+
+class InfoMixin(ClientProtocol):
     """Personal information APIs."""
 
-    def get_info(self):
+    def get_info(self) -> dict[str, Any]:
         """获取个人信息"""
         url = urljoin(self.base_url, "xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801")
         try:
@@ -61,7 +67,7 @@ class InfoMixin:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
 
-    def _get_info(self):
+    def _get_info(self) -> dict[str, Any]:
         """获取个人信息"""
         url = urljoin(self.base_url, "xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801")
         try:

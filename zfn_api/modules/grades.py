@@ -1,15 +1,23 @@
+from __future__ import annotations
+
 import json
 import time
 import traceback
+from typing import Any
 from urllib.parse import urljoin
+
 from pyquery import PyQuery as pq
 from requests import exceptions
 
+from ..protocols import ClientProtocol
 
-class GradeMixin:
+
+class GradeMixin(ClientProtocol):
     """Grade related APIs."""
 
-    def get_grade(self, year: int, term: int = 0, use_personal_info: bool = False):
+    def get_grade(
+        self, year: int, term: int = 0, use_personal_info: bool = False
+    ) -> dict[str, Any]:
         """获取成绩"""
         url = urljoin(
             self.base_url,
@@ -86,7 +94,7 @@ class GradeMixin:
             traceback.print_exc()
             return {"code": 999, "msg": "获取成绩时未记录的错误：" + str(e)}
 
-    def get_gpa(self):
+    def get_gpa(self) -> float | str | dict[str, Any]:
         """获取GPA"""
         url = urljoin(
             self.base_url,

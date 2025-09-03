@@ -10,6 +10,9 @@ dependencies = [
     "rsa==4.8",
 ]
 
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.320"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
